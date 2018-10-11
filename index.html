@@ -489,26 +489,15 @@
                                     <h3>Send Message</h3>
                                 </div>
                                 <div class="row">
-                                    <form action="https://formspree.io/sumanrakoirala@gmail.com" method="POST" id="contactForm">
-                                        <div class="form-group col-md-12">
-                                            <input type="text" class="form-control" name="name" id="name" placeholder="First Name*">
-                                        </div>
-                                        <div class="form-group col-md-12">
-                                            <input type="text" class="form-control" name="last" id="last" placeholder="Last Name*">
-                                        </div>
-                                        <div class="form-group col-md-12">
-                                            <input type="email" class="form-control" name="email" id="email" placeholder="Your Email*">
-                                        </div>
-                                        <div class="form-group col-md-12">
-                                            <input type="text" class="form-control" name="subject" id="subject" placeholder="Subject">
-                                        </div>
-                                        <div class="form-group col-md-12">
-                                            <textarea class="form-control" rows="1" id="message" name="message" placeholder="Write Message"></textarea>
-                                        </div>
-                                        <div class="form-group col-md-12">
-                                            <button class="btn btn-default contact_btn" type="submit"><span>Send Massage</span></button>
-                                        </div>
-                                    </form>
+									<form method="POST" action="https://formspree.io/sumanrakoirala@gmail.com">
+										<input type="email" name="_replyto" placeholder="Your Email">
+										<input type="text" name="title" placeholder="Subject">
+										<textarea name="message" placeholder="Message"></textarea>
+										<input type="submit" value="Send">
+									</form>
+                                    <!--<iframe src="https://docs.google.com/forms/d/e/1FAIpQLSd_RTFB0DI91Sx2Wv64Ruzp48-fYM4t4y5QyRwrqYm4oIuvcA/viewform?usp=pp_url" height="700" width="500" scrolling="no">
+						
+									</iframe>-->
                                     <div id="success">
                                         <p>Your text message sent successfully!</p>
                                     </div>
@@ -552,6 +541,7 @@ Copyright &copy;<script>document.write(new Date().getFullYear());</script> All r
                 </div>
             </div>
         </footer>
+		
         <!--================End footer Area =================-->
         
        
