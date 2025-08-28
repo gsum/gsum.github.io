@@ -4,456 +4,428 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pomodoro Timer</title>
+    <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
+    <!-- Chart.js for the productivity chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
     <style>
+        /* Custom styles for the application */
         body {
             font-family: 'Inter', sans-serif;
+            transition: background-color 0.5s ease;
         }
-        .font-mono {
-            font-family: 'Space Mono', monospace;
+        /* Custom transition for smooth color changes */
+        .transition-colors-background {
+            transition: background-color 0.5s ease-in-out;
         }
-        @keyframes fade-in {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-        }
-        .animate-fade-in {
-            animation: fade-in 0.3s ease-out forwards;
-        }
-        .hidden {
-            display: none;
+        /* Styling for the settings modal */
+        #settings-modal {
+            transition: opacity 0.3s ease-in-out;
         }
     </style>
 </head>
-<body class="bg-gray-900">
+<body class="bg-red-100 transition-colors-background">
 
-    <div id="app-container" class="min-h-screen w-full transition-colors duration-500 flex flex-col items-center justify-center p-4 bg-red-500">
-        <div class="w-full max-w-md mx-auto bg-white/10 backdrop-blur-sm rounded-2xl p-6 shadow-2xl text-white">
+    <div class="min-h-screen flex flex-col items-center justify-center p-4">
+        <div class="w-full max-w-md mx-auto bg-white/30 backdrop-blur-sm rounded-2xl shadow-lg p-6 md:p-8">
             
-            <div class="flex justify-between items-center mb-6">
-                <h1 class="text-2xl font-bold tracking-wider">Pomodoro</h1>
-                <button id="settings-btn" class="p-2 rounded-full hover:bg-white/20 transition-colors">
-                    <i data-lucide="settings"></i>
+            <!-- Header with Title and Settings Button -->
+            <header class="flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-bold text-gray-800">Pomodoro</h1>
+                <button id="settings-btn" class="text-gray-600 hover:text-gray-900 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
                 </button>
+            </header>
+
+            <!-- Mode Tabs -->
+            <div class="flex justify-center space-x-2 md:space-x-4 mb-8 bg-black/5 p-2 rounded-full">
+                <button data-mode="pomodoro" class="mode-btn flex-1 py-2 px-4 rounded-full text-sm md:text-base font-semibold transition-all duration-300">Pomodoro</button>
+                <button data-mode="shortBreak" class="mode-btn flex-1 py-2 px-4 rounded-full text-sm md:text-base font-semibold transition-all duration-300">Short Break</button>
+                <button data-mode="longBreak" class="mode-btn flex-1 py-2 px-4 rounded-full text-sm md:text-base font-semibold transition-all duration-300">Long Break</button>
             </div>
 
-            <div class="bg-black/20 p-2 rounded-full flex justify-around items-center mb-8">
-                <button data-mode="pomodoro" class="mode-btn w-full text-center py-2 px-4 rounded-full text-sm font-semibold transition-all duration-300 bg-white text-black shadow-md">Pomodoro</button>
-                <button data-mode="shortBreak" class="mode-btn w-full text-center py-2 px-4 rounded-full text-sm font-semibold transition-all duration-300 hover:bg-white/10">Short Break</button>
-                <button data-mode="longBreak" class="mode-btn w-full text-center py-2 px-4 rounded-full text-sm font-semibold transition-all duration-300 hover:bg-white/10">Long Break</button>
+            <!-- Timer Display -->
+            <div class="flex justify-center items-center mb-8">
+                <p id="timer-display" class="text-7xl md:text-8xl font-extrabold text-gray-900 tracking-tighter">25:00</p>
             </div>
 
-            <div class="relative w-64 h-64 sm:w-80 sm:h-80 mx-auto mb-8">
-                <div class="absolute inset-0 flex items-center justify-center">
-                    <div id="progress-circle" class="w-full h-full rounded-full bg-black/20 shadow-inner" style="background: conic-gradient(rgb(220 38 38) 0%, transparent 0%)">
-                        <div class="absolute inset-3 sm:inset-4 bg-gray-800 rounded-full flex items-center justify-center">
-                             <span id="time-display" class="text-5xl sm:text-7xl font-mono font-bold tracking-widest">
-                                25:00
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex items-center justify-center space-x-4 mb-6">
-                <button id="start-pause-btn" class="w-40 py-4 text-2xl font-bold uppercase tracking-widest bg-white text-black rounded-full shadow-lg hover:opacity-90 transform hover:scale-105 transition-all duration-300 flex items-center justify-center">
-                    <i data-lucide="play" class="mr-2"></i> <span id="start-pause-text">Start</span>
+            <!-- Control Buttons -->
+            <div class="flex justify-center space-x-4">
+                <button id="start-pause-btn" class="w-32 py-3 px-6 bg-gray-800 text-white font-bold rounded-full shadow-lg hover:bg-gray-900 transform hover:scale-105 transition-all duration-300">
+                    START
                 </button>
-                <button id="reset-btn" class="p-4 rounded-full bg-white/20 hover:bg-white/30 transition-colors">
-                    <i data-lucide="rotate-ccw"></i>
-                </button>
-            </div>
-
-            <div class="text-center">
-                <button id="get-advice-btn" class="bg-white/20 hover:bg-white/30 text-white font-bold py-2 px-4 rounded-full inline-flex items-center transition-colors">
-                    <i data-lucide="sparkles" class="mr-2 h-4 w-4"></i>
-                    Get Advice
+                <button id="reset-btn" class="py-3 px-6 bg-gray-200 text-gray-700 font-bold rounded-full shadow-lg hover:bg-gray-300 transform hover:scale-105 transition-all duration-300">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path opacity="0.5" fill-rule="evenodd" clip-rule="evenodd" d="M6.87348 7.87338C9.01606 5.7308 12.1674 5.20902 14.8007 6.31041L15.9309 5.18019C12.6515 3.53111 8.55119 4.07435 5.81282 6.81272C2.39573 10.2298 2.39573 15.77 5.81282 19.1871C9.2299 22.6042 14.7701 22.6042 18.1872 19.1871C20.1746 17.1997 21.0057 14.4933 20.6819 11.9072C20.6304 11.4962 20.2555 11.2048 19.8445 11.2562C19.4335 11.3077 19.142 11.6826 19.1935 12.0936C19.4622 14.24 18.7727 16.4802 17.1265 18.1264C14.2952 20.9577 9.70478 20.9577 6.87348 18.1264C4.04217 15.2951 4.04217 10.7047 6.87348 7.87338Z" fill="black"/>
+                  <path d="M18.7212 4.20119C18.7212 3.89785 18.5384 3.62437 18.2582 3.50828C17.9779 3.3922 17.6553 3.45637 17.4408 3.67086L15.9314 5.18028L14.8012 6.3105L13.1982 7.9135C12.9837 8.128 12.9195 8.45059 13.0356 8.73085C13.1517 9.0111 13.4252 9.19383 13.7285 9.19383H17.9712C18.3854 9.19383 18.7212 8.85805 18.7212 8.44383V4.20119Z" fill="black"/>
+                  </svg>
                 </button>
             </div>
         </div>
     </div>
 
     <!-- Settings Modal -->
-    <div id="settings-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden">
-        <div class="bg-gray-800 text-white w-full max-w-lg rounded-2xl p-6 shadow-2xl animate-fade-in">
-            <div class="flex justify-between items-center mb-6 border-b border-gray-700 pb-4">
-                <h2 class="text-2xl font-bold">Settings</h2>
-                <button id="close-settings-btn" class="text-gray-400 hover:text-white text-3xl leading-none">&times;</button>
+    <div id="settings-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg transform scale-95 transition-transform duration-300">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Settings</h2>
+                <button id="close-settings-btn" class="text-gray-500 hover:text-gray-800">&times;</button>
             </div>
-            <h3 class="text-lg font-semibold mb-4">Timer Durations (minutes)</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+            
+            <div class="space-y-6">
                 <div>
-                    <label for="pomodoro-input" class="block text-sm font-medium text-gray-400 mb-1">Pomodoro</label>
-                    <input type="number" id="pomodoro-input" class="w-full bg-gray-700 rounded-lg p-2 border border-gray-600 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"/>
+                    <h3 class="text-lg font-semibold mb-2 text-gray-700">Timer Durations (minutes)</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label for="pomodoro-duration" class="block text-sm font-medium text-gray-600">Pomodoro</label>
+                            <input type="number" id="pomodoro-duration" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2">
+                        </div>
+                        <div>
+                            <label for="short-break-duration" class="block text-sm font-medium text-gray-600">Short Break</label>
+                            <input type="number" id="short-break-duration" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2">
+                        </div>
+                        <div>
+                            <label for="long-break-duration" class="block text-sm font-medium text-gray-600">Long Break</label>
+                            <input type="number" id="long-break-duration" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2">
+                        </div>
+                    </div>
                 </div>
+
                 <div>
-                    <label for="shortBreak-input" class="block text-sm font-medium text-gray-400 mb-1">Short Break</label>
-                    <input type="number" id="shortBreak-input" class="w-full bg-gray-700 rounded-lg p-2 border border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"/>
+                    <h3 class="text-lg font-semibold mb-2 text-gray-700">Productivity (Last 7 Days)</h3>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <canvas id="pomodoro-chart"></canvas>
+                    </div>
                 </div>
-                <div>
-                    <label for="longBreak-input" class="block text-sm font-medium text-gray-400 mb-1">Long Break</label>
-                    <input type="number" id="longBreak-input" class="w-full bg-gray-700 rounded-lg p-2 border border-gray-600 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"/>
+                
+                <div class="flex justify-end">
+                    <button id="save-settings-btn" class="py-2 px-6 bg-gray-800 text-white font-bold rounded-full shadow-lg hover:bg-gray-900 transform hover:scale-105 transition-all duration-300">Save</button>
                 </div>
-            </div>
-            <h3 class="text-lg font-semibold mb-4">Pomodoro Stats (Last 7 Days)</h3>
-            <div id="chart-container" class="h-64 w-full bg-gray-900/50 p-4 rounded-lg"></div>
-            <div class="mt-8 text-right">
-                <button id="save-settings-btn" class="bg-white text-black font-bold py-2 px-6 rounded-lg hover:opacity-90 transition-opacity">Save</button>
             </div>
         </div>
     </div>
 
-    <!-- Advice Modal -->
-    <div id="advice-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden">
-        <div class="bg-gray-800 text-white w-full max-w-md rounded-2xl p-6 shadow-2xl animate-fade-in">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold flex items-center"><i data-lucide="sparkles" class="mr-2 h-5 w-5 text-yellow-400"></i> AI Advice</h2>
-                <button id="close-advice-btn" class="text-gray-400 hover:text-white text-3xl leading-none">&times;</button>
-            </div>
-            <div id="advice-content" class="min-h-[100px] bg-gray-900/50 p-4 rounded-lg"></div>
-            <div class="mt-6 text-right">
-                <button id="advice-modal-close-btn" class="bg-white text-black font-bold py-2 px-6 rounded-lg hover:opacity-90 transition-opacity">Close</button>
-            </div>
-        </div>
-    </div>
-
-    <script type="module">
-        // Firebase Imports
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // --- App State ---
-        let state = {
-            mode: 'pomodoro',
-            times: {
-                pomodoro: 25 * 60,
-                shortBreak: 5 * 60,
-                longBreak: 15 * 60,
-            },
-            timeLeft: 25 * 60,
-            isActive: false,
-            stats: [],
-            timerInterval: null,
-            db: null,
-            auth: null,
-            userId: null,
-            isAuthReady: false,
-            userDocRef: null,
-        };
-
-        // --- DOM Elements ---
-        const DOMElements = {
-            appContainer: document.getElementById('app-container'),
-            timeDisplay: document.getElementById('time-display'),
-            startPauseBtn: document.getElementById('start-pause-btn'),
-            startPauseText: document.getElementById('start-pause-text'),
-            resetBtn: document.getElementById('reset-btn'),
-            settingsBtn: document.getElementById('settings-btn'),
-            getAdviceBtn: document.getElementById('get-advice-btn'),
-            modeBtns: document.querySelectorAll('.mode-btn'),
-            progressCircle: document.getElementById('progress-circle'),
-            // Modals
-            settingsModal: document.getElementById('settings-modal'),
-            closeSettingsBtn: document.getElementById('close-settings-btn'),
-            saveSettingsBtn: document.getElementById('save-settings-btn'),
-            pomodoroInput: document.getElementById('pomodoro-input'),
-            shortBreakInput: document.getElementById('shortBreak-input'),
-            longBreakInput: document.getElementById('longBreak-input'),
-            chartContainer: document.getElementById('chart-container'),
-            adviceModal: document.getElementById('advice-modal'),
-            closeAdviceBtn: document.getElementById('close-advice-btn'),
-            adviceModalCloseBtn: document.getElementById('advice-modal-close-btn'),
-            adviceContent: document.getElementById('advice-content'),
-        };
-
-        // --- UI Update Functions ---
-        const formatTime = (seconds) => {
-            const mins = Math.floor(seconds / 60);
-            const secs = seconds % 60;
-            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        };
-
-        const updateTimerDisplay = () => {
-            DOMElements.timeDisplay.textContent = formatTime(state.timeLeft);
-            const progress = ((state.times[state.mode] - state.timeLeft) / state.times[state.mode]) * 100;
-            const color = modeColors[state.mode].progressColor;
-            DOMElements.progressCircle.style.background = `conic-gradient(${color} ${progress}%, transparent ${progress}%)`;
-        };
-        
-        const modeColors = {
-            pomodoro: { bg: 'bg-red-500', progressColor: 'rgb(220 38 38)' },
-            shortBreak: { bg: 'bg-blue-500', progressColor: 'rgb(59 130 246)' },
-            longBreak: { bg: 'bg-green-500', progressColor: 'rgb(34 197 94)' },
-        };
-
-        const updateUIMode = () => {
-            // Update background color
-            DOMElements.appContainer.className = `min-h-screen w-full transition-colors duration-500 flex flex-col items-center justify-center p-4 ${modeColors[state.mode].bg}`;
-            
-            // Update active button style
-            DOMElements.modeBtns.forEach(btn => {
-                btn.classList.remove('bg-white', 'text-black', 'shadow-md');
-                btn.classList.add('hover:bg-white/10');
-                if (btn.dataset.mode === state.mode) {
-                    btn.classList.add('bg-white', 'text-black', 'shadow-md');
-                    btn.classList.remove('hover:bg-white/10');
-                }
-            });
-            updateTimerDisplay();
-        };
-
-        const updateStartPauseButton = () => {
-            const icon = state.isActive ? 'pause' : 'play';
-            DOMElements.startPauseText.textContent = state.isActive ? 'Pause' : 'Start';
-            DOMElements.startPauseBtn.innerHTML = `<i data-lucide="${icon}" class="mr-2"></i> <span id="start-pause-text">${state.isActive ? 'Pause' : 'Start'}</span>`;
-            lucide.createIcons();
-        };
-
-        // --- Timer Logic ---
-        const startTimer = () => {
-            if (state.timerInterval) clearInterval(state.timerInterval);
-            state.isActive = true;
-            updateStartPauseButton();
-            state.timerInterval = setInterval(() => {
-                state.timeLeft--;
-                updateTimerDisplay();
-                if (state.timeLeft <= 0) {
-                    clearInterval(state.timerInterval);
-                    state.isActive = false;
-                    if (state.mode === 'pomodoro') {
-                        recordPomodoroSession();
-                    }
-                    updateStartPauseButton();
-                }
-            }, 1000);
-        };
-
-        const pauseTimer = () => {
-            clearInterval(state.timerInterval);
-            state.isActive = false;
-            updateStartPauseButton();
-        };
-
-        const resetTimer = () => {
-            clearInterval(state.timerInterval);
-            state.isActive = false;
-            state.timeLeft = state.times[state.mode];
-            updateTimerDisplay();
-            updateStartPauseButton();
-        };
-
-        // --- Event Handlers ---
-        DOMElements.startPauseBtn.addEventListener('click', () => {
-            if (state.timeLeft === 0) return;
-            state.isActive ? pauseTimer() : startTimer();
-        });
-
-        DOMElements.resetBtn.addEventListener('click', resetTimer);
-
-        DOMElements.modeBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                state.mode = btn.dataset.mode;
-                resetTimer();
-                updateUIMode();
-            });
-        });
-
-        // --- Modals Logic ---
-        const toggleModal = (modal, show) => {
-            if (show) {
-                modal.classList.remove('hidden');
-            } else {
-                modal.classList.add('hidden');
-            }
-        };
-
-        DOMElements.settingsBtn.addEventListener('click', () => {
-            DOMElements.pomodoroInput.value = state.times.pomodoro / 60;
-            DOMElements.shortBreakInput.value = state.times.shortBreak / 60;
-            DOMElements.longBreakInput.value = state.times.longBreak / 60;
-            renderChart();
-            toggleModal(DOMElements.settingsModal, true);
-        });
-        
-        DOMElements.closeSettingsBtn.addEventListener('click', () => toggleModal(DOMElements.settingsModal, false));
-        
-        DOMElements.saveSettingsBtn.addEventListener('click', () => {
-            const newTimes = {
-                pomodoro: parseInt(DOMElements.pomodoroInput.value) * 60,
-                shortBreak: parseInt(DOMElements.shortBreakInput.value) * 60,
-                longBreak: parseInt(DOMElements.longBreakInput.value) * 60,
-            };
-            state.times = newTimes;
-            saveDataToFirestore({ settings: { pomodoro: newTimes.pomodoro / 60, shortBreak: newTimes.shortBreak / 60, longBreak: newTimes.longBreak / 60 } });
-            resetTimer();
-            updateUIMode();
-            toggleModal(DOMElements.settingsModal, false);
-        });
-
-        DOMElements.getAdviceBtn.addEventListener('click', async () => {
-            toggleModal(DOMElements.adviceModal, true);
-            DOMElements.adviceContent.innerHTML = `<div class="flex justify-center items-center h-full"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div></div>`;
-            const prompt = state.mode === 'pomodoro'
-                ? "Give me a short, actionable productivity tip for staying focused."
-                : "Suggest a quick and refreshing activity for a short break.";
-            const result = await callGeminiApi(prompt);
-            DOMElements.adviceContent.innerHTML = `<p class="text-gray-300">${result}</p>`;
-        });
-
-        DOMElements.closeAdviceBtn.addEventListener('click', () => toggleModal(DOMElements.adviceModal, false));
-        DOMElements.adviceModalCloseBtn.addEventListener('click', () => toggleModal(DOMElements.adviceModal, false));
-
-        // --- Chart Logic ---
-        const renderChart = () => {
-            DOMElements.chartContainer.innerHTML = ''; // Clear previous chart
-            const { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } = Recharts;
-            
-            const last7DaysStats = [];
-            for (let i = 6; i >= 0; i--) {
-                const d = new Date();
-                d.setDate(d.getDate() - i);
-                const dateString = d.toISOString().split('T')[0];
-                const stat = state.stats.find(s => s.date === dateString);
-                last7DaysStats.push({
-                    date: dateString.substring(5),
-                    minutes: stat ? stat.minutes : 0,
-                });
-            }
-            
-            const chart = React.createElement(ResponsiveContainer, { width: "100%", height: "100%" },
-                React.createElement(BarChart, { data: last7DaysStats, margin: { top: 5, right: 20, left: -10, bottom: 5 } },
-                    React.createElement(CartesianGrid, { strokeDasharray: "3 3", stroke: "#4A5568" }),
-                    React.createElement(XAxis, { dataKey: "date", stroke: "#A0AEC0" }),
-                    React.createElement(YAxis, { stroke: "#A0AEC0" }),
-                    React.createElement(Tooltip, { contentStyle: { backgroundColor: '#2D3748', border: 'none', borderRadius: '8px' } }),
-                    React.createElement(Bar, { dataKey: "minutes", fill: "#EF4444", radius: [4, 4, 0, 0] })
-                )
-            );
-            ReactDOM.render(chart, DOMElements.chartContainer);
-        };
-
-        // --- Gemini API Call ---
-        const callGeminiApi = async (prompt) => {
-            const apiKey = "";
-            const apiUrl = `https://generativelaunguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-            const payload = { contents: [{ parts: [{ text: prompt }] }] };
-            let retries = 3;
-            let delay = 1000;
-            while (retries > 0) {
-                try {
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    if (response.ok) {
-                        const result = await response.json();
-                        if (result.candidates && result.candidates[0].content?.parts?.[0]?.text) {
-                            return result.candidates[0].content.parts[0].text;
-                        }
-                    }
-                } catch (error) {
-                    console.error("API call failed:", error);
-                }
-                retries--;
-                await new Promise(resolve => setTimeout(resolve, delay));
-                delay *= 2;
-            }
-            return "Sorry, I couldn't get any advice right now. Please try again later.";
-        };
-
-        // --- Firebase Logic ---
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-pomodoro-app';
-
-        const initializeFirebase = () => {
-            if (Object.keys(firebaseConfig).length > 0) {
-                const app = initializeApp(firebaseConfig);
-                state.db = getFirestore(app);
-                state.auth = getAuth(app);
-
-                onAuthStateChanged(state.auth, async (user) => {
-                    if (user) {
-                        state.userId = user.uid;
-                    } else {
-                        try {
-                            const { user: anonUser } = await signInAnonymously(state.auth);
-                            state.userId = anonUser.uid;
-                        } catch (error) {
-                            console.error("Error signing in anonymously:", error);
-                        }
-                    }
-                    state.isAuthReady = true;
-                    setupFirestoreListener();
-                });
-            } else {
-                console.warn("Firebase config not found. App will run in local mode.");
-                state.isAuthReady = true;
-            }
-        };
-
-        const setupFirestoreListener = () => {
-            if (state.db && state.userId) {
-                state.userDocRef = doc(state.db, `artifacts/${appId}/users/${state.userId}/data/pomodoro`);
-                onSnapshot(state.userDocRef, (docSnap) => {
-                    if (docSnap.exists()) {
-                        const data = docSnap.data();
-                        if (data.settings) {
-                            state.times = {
-                                pomodoro: data.settings.pomodoro * 60,
-                                shortBreak: data.settings.shortBreak * 60,
-                                longBreak: data.settings.longBreak * 60,
-                            };
-                        }
-                        if (data.stats) {
-                            state.stats = data.stats;
-                        }
-                        resetTimer();
-                        updateUIMode();
-                    } else {
-                        saveDataToFirestore({
-                            settings: { pomodoro: 25, shortBreak: 5, longBreak: 15 },
-                            stats: [],
-                        });
-                    }
-                });
-            }
-        };
-
-        const saveDataToFirestore = async (data) => {
-            if (!state.userDocRef) return;
-            try {
-                await setDoc(state.userDocRef, data, { merge: true });
-            } catch (error) {
-                console.error("Error saving data to Firestore:", error);
-            }
-        };
-
-        const recordPomodoroSession = () => {
-            const today = new Date().toISOString().split('T')[0];
-            const pomodoroDuration = state.times.pomodoro / 60;
-            const todayStatIndex = state.stats.findIndex(s => s.date === today);
-            let newStats = [...state.stats];
-
-            if (todayStatIndex > -1) {
-                newStats[todayStatIndex].minutes += pomodoroDuration;
-            } else {
-                newStats.push({ date: today, minutes: pomodoroDuration });
-            }
-            newStats.sort((a, b) => new Date(a.date) - new Date(b.date));
-            state.stats = newStats;
-            saveDataToFirestore({ stats: newStats });
-        };
-
-        // --- App Initialization ---
+    <script>
         document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
-            updateUIMode();
-            updateTimerDisplay();
-            initializeFirebase();
+            // DOM Elements
+            const timerDisplay = document.getElementById('timer-display');
+            const startPauseBtn = document.getElementById('start-pause-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            const modeButtons = document.querySelectorAll('.mode-btn');
+            const settingsBtn = document.getElementById('settings-btn');
+            const settingsModal = document.getElementById('settings-modal');
+            const closeSettingsBtn = document.getElementById('close-settings-btn');
+            const saveSettingsBtn = document.getElementById('save-settings-btn');
+            const pomodoroDurationInput = document.getElementById('pomodoro-duration');
+            const shortBreakDurationInput = document.getElementById('short-break-duration');
+            const longBreakDurationInput = document.getElementById('long-break-duration');
+            const chartCanvas = document.getElementById('pomodoro-chart');
+
+            // Timer state
+            let timerInterval = null;
+            let currentMode = 'pomodoro';
+            let timeRemaining = 25 * 60; // in seconds
+            let isRunning = false;
+            let pomodoroChart = null;
+
+            // Timer durations (in minutes)
+            let durations = {
+                pomodoro: 25,
+                shortBreak: 5,
+                longBreak: 15
+            };
+            
+            // --- Native Web Audio API for Sound ---
+            let audioContext;
+
+            // This function creates a self-contained sound player.
+            function playNote(frequency, duration, startTime) {
+                try {
+                    // Create AudioContext on the first user interaction
+                    if (!audioContext) {
+                        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    }
+                    
+                    // In some browsers, the audio context starts suspended.
+                    // Resume it on user gesture.
+                    if (audioContext.state === 'suspended') {
+                        audioContext.resume();
+                    }
+                    
+                    const time = startTime || audioContext.currentTime;
+
+                    // Create an oscillator (the sound source)
+                    const oscillator = audioContext.createOscillator();
+                    oscillator.type = 'sine'; // A smooth, clean tone
+                    oscillator.frequency.setValueAtTime(frequency, time);
+
+                    // Create a gain node to control volume and prevent clipping
+                    const gainNode = audioContext.createGain();
+                    gainNode.gain.setValueAtTime(0.5, time); // Increased volume from 0.2 to 0.5
+                    gainNode.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+
+                    // Connect the nodes: oscillator -> gain -> destination (speakers)
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+
+                    // Start and stop the sound
+                    oscillator.start(time);
+                    oscillator.stop(time + duration);
+                } catch (e) {
+                    console.error("Web Audio API error:", e);
+                }
+            }
+
+            const playClickSound = () => {
+                playNote(440, 0.1); // A short, medium-pitched click (A4 note)
+            };
+
+            const playEndSound = () => {
+                // Ensure audio context is ready before scheduling notes
+                if (!audioContext) {
+                    try {
+                        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    } catch (e) {
+                        console.error("Could not create AudioContext:", e);
+                        return; // Exit if audio context cannot be created
+                    }
+                }
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+
+                const now = audioContext.currentTime;
+                // Play a longer, more noticeable 3-note melody
+                playNote(523.25, 0.2, now);        // C5
+                playNote(659.25, 0.2, now + 0.2);  // E5
+                playNote(783.99, 0.4, now + 0.4);  // G5, held longer
+            };
+
+
+            // --- Local Storage for Persistence ---
+            function saveSettings() {
+                localStorage.setItem('pomodoroDurations', JSON.stringify(durations));
+            }
+
+            function loadSettings() {
+                const savedDurations = localStorage.getItem('pomodoroDurations');
+                if (savedDurations) {
+                    durations = JSON.parse(savedDurations);
+                }
+                pomodoroDurationInput.value = durations.pomodoro;
+                shortBreakDurationInput.value = durations.shortBreak;
+                longBreakDurationInput.value = durations.longBreak;
+            }
+            
+            function getPomodoroStats() {
+                return JSON.parse(localStorage.getItem('pomodoroStats')) || {};
+            }
+
+            function savePomodoroStats(stats) {
+                localStorage.setItem('pomodoroStats', JSON.stringify(stats));
+            }
+
+            function recordPomodoroCompletion() {
+                const stats = getPomodoroStats();
+                const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+                stats[today] = (stats[today] || 0) + 1;
+                savePomodoroStats(stats);
+            }
+
+
+            // --- UI Update Functions ---
+            function updateTimerDisplay() {
+                const minutes = Math.floor(timeRemaining / 60);
+                const seconds = timeRemaining % 60;
+                const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                timerDisplay.textContent = formattedTime;
+                document.title = `${formattedTime} - ${currentMode.charAt(0).toUpperCase() + currentMode.slice(1)}`;
+            }
+
+            function updateModeUI() {
+                document.body.classList.remove('bg-red-100', 'bg-blue-100', 'bg-green-100');
+                modeButtons.forEach(btn => {
+                    btn.classList.remove('bg-gray-800', 'text-white', 'shadow-inner');
+                    btn.classList.add('text-gray-600');
+                });
+
+                const activeBtn = document.querySelector(`[data-mode="${currentMode}"]`);
+                if (currentMode === 'pomodoro') {
+                    document.body.classList.add('bg-red-100');
+                    if (activeBtn) activeBtn.classList.add('bg-gray-800', 'text-white', 'shadow-inner');
+                } else if (currentMode === 'shortBreak') {
+                    document.body.classList.add('bg-blue-100');
+                    if (activeBtn) activeBtn.classList.add('bg-gray-800', 'text-white', 'shadow-inner');
+                } else { // longBreak
+                    document.body.classList.add('bg-green-100');
+                    if (activeBtn) activeBtn.classList.add('bg-gray-800', 'text-white', 'shadow-inner');
+                }
+            }
+            
+            // --- Timer Logic ---
+            function switchMode(mode) {
+                currentMode = mode;
+                resetTimer();
+                updateModeUI();
+            }
+
+            function startTimer() {
+                if (isRunning) return;
+                isRunning = true;
+                startPauseBtn.textContent = 'PAUSE';
+                timerInterval = setInterval(() => {
+                    timeRemaining--;
+                    updateTimerDisplay();
+                    if (timeRemaining <= 0) {
+                        clearInterval(timerInterval);
+                        isRunning = false;
+                        playEndSound();
+                        startPauseBtn.textContent = 'START';
+                        if(currentMode === 'pomodoro') {
+                            recordPomodoroCompletion();
+                            updateChart();
+                        }
+                    }
+                }, 1000);
+            }
+
+            function pauseTimer() {
+                if (!isRunning) return;
+                isRunning = false;
+                startPauseBtn.textContent = 'START';
+                clearInterval(timerInterval);
+            }
+
+            function resetTimer() {
+                pauseTimer();
+                timeRemaining = durations[currentMode] * 60;
+                updateTimerDisplay();
+            }
+
+            // --- Chart Logic ---
+            function updateChart() {
+                const stats = getPomodoroStats();
+                const labels = [];
+                const data = [];
+
+                for (let i = 6; i >= 0; i--) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - i);
+                    const dateString = date.toISOString().split('T')[0];
+                    const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+                    
+                    labels.push(dayName);
+                    data.push(stats[dateString] || 0);
+                }
+
+                if (pomodoroChart) {
+                    pomodoroChart.data.labels = labels;
+                    pomodoroChart.data.datasets[0].data = data;
+                    pomodoroChart.update();
+                } else {
+                    const ctx = chartCanvas.getContext('2d');
+                    pomodoroChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Completed Pomodoros',
+                                data: data,
+                                backgroundColor: 'rgba(239, 68, 68, 0.6)',
+                                borderColor: 'rgba(239, 68, 68, 1)',
+                                borderWidth: 1,
+                                borderRadius: 5,
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        stepSize: 1
+                                    }
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            // --- Event Listeners ---
+            startPauseBtn.addEventListener('click', () => {
+                playClickSound();
+                if (isRunning) {
+                    pauseTimer();
+                } else {
+                    startTimer();
+                }
+            });
+
+            resetBtn.addEventListener('click', () => {
+                playClickSound();
+                resetTimer();
+            });
+
+            modeButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    playClickSound();
+                    switchMode(button.dataset.mode);
+                });
+            });
+
+            settingsBtn.addEventListener('click', () => {
+                playClickSound();
+                settingsModal.classList.remove('hidden');
+                setTimeout(() => {
+                    settingsModal.classList.remove('opacity-0');
+                    settingsModal.querySelector('div').classList.remove('scale-95');
+                    updateChart();
+                }, 10);
+            });
+
+            const closeModal = () => {
+                playClickSound();
+                settingsModal.classList.add('opacity-0');
+                settingsModal.querySelector('div').classList.add('scale-95');
+                setTimeout(() => settingsModal.classList.add('hidden'), 300);
+            };
+
+            closeSettingsBtn.addEventListener('click', closeModal);
+            settingsModal.addEventListener('click', (e) => {
+                if (e.target === settingsModal) {
+                    closeModal();
+                }
+            });
+
+            saveSettingsBtn.addEventListener('click', () => {
+                durations.pomodoro = parseInt(pomodoroDurationInput.value, 10) || 25;
+                durations.shortBreak = parseInt(shortBreakDurationInput.value, 10) || 5;
+                durations.longBreak = parseInt(longBreakDurationInput.value, 10) || 15;
+                saveSettings();
+                if (currentMode === 'pomodoro') timeRemaining = durations.pomodoro * 60;
+                if (currentMode === 'shortBreak') timeRemaining = durations.shortBreak * 60;
+                if (currentMode === 'longBreak') timeRemaining = durations.longBreak * 60;
+                if (!isRunning) {
+                    updateTimerDisplay();
+                }
+                closeModal();
+            });
+
+            // --- Initial Setup ---
+            loadSettings();
+            switchMode('pomodoro');
         });
     </script>
 </body>
