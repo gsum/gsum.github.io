@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workout Rounds Timer</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tone.js for audio generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            touch-action: manipulation; /* Prevents double tap zoom on mobile */
+            transition: background-color 0.5s ease;
+        }
+        /* Custom styles for input number arrows */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen">
+
+    <div class="w-full max-w-md mx-auto p-6 md:p-8 bg-gray-800 rounded-2xl shadow-2xl">
+        <h1 class="text-3xl font-bold text-center mb-6 text-cyan-400">Workout Timer</h1>
+
+        <!-- Settings Section -->
+        <div id="settings" class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+            <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Workout Time</label>
+                <div class="flex space-x-2">
+                    <div class="w-full">
+                        <input id="work-minutes" type="number" min="0" value="1" class="w-full bg-gray-700 text-white border border-gray-600 rounded-lg text-center py-2 text-lg focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+                        <label for="work-minutes" class="text-xs text-gray-500 text-center block mt-1">Minutes</label>
+                    </div>
+                    <div class="w-full">
+                        <input id="work-seconds" type="number" min="0" max="59" value="0" class="w-full bg-gray-700 text-white border border-gray-600 rounded-lg text-center py-2 text-lg focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+                        <label for="work-seconds" class="text-xs text-gray-500 text-center block mt-1">Seconds</label>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Rest Time</label>
+                <div class="flex space-x-2">
+                    <div class="w-full">
+                        <input id="rest-minutes" type="number" min="0" value="0" class="w-full bg-gray-700 text-white border border-gray-600 rounded-lg text-center py-2 text-lg focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+                        <label for="rest-minutes" class="text-xs text-gray-500 text-center block mt-1">Minutes</label>
+                    </div>
+                    <div class="w-full">
+                        <input id="rest-seconds" type="number" min="0" max="59" value="30" class="w-full bg-gray-700 text-white border border-gray-600 rounded-lg text-center py-2 text-lg focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+                        <label for="rest-seconds" class="text-xs text-gray-500 text-center block mt-1">Seconds</label>
+                    </div>
+                </div>
+            </div>
+            <div class="sm:col-span-2">
+                <label for="rounds" class="block text-sm font-medium text-gray-400 mb-2">Number of Rounds</label>
+                <input id="rounds" type="number" min="1" value="5" class="w-full bg-gray-700 text-white border border-gray-600 rounded-lg text-center py-2 text-lg focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+            </div>
+        </div>
+
+        <!-- Timer Display Section -->
+        <div id="timer-display" class="text-center mb-8 hidden">
+             <p id="status" class="text-2xl font-semibold mb-2 text-yellow-400">GET READY</p>
+             <p id="timer" class="text-8xl font-bold tracking-tighter">00:00</p>
+             <p id="round-counter" class="text-xl text-gray-400 mt-2">Round 1 / 5</p>
+        </div>
+
+
+        <!-- Controls Section -->
+        <div id="controls" class="flex flex-col space-y-4">
+             <button id="start-btn" class="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-4 rounded-lg text-xl transition-transform transform hover:scale-105 shadow-lg">Start Workout</button>
+             <div id="pause-reset-controls" class="hidden grid grid-cols-2 gap-4">
+                <button id="pause-btn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 rounded-lg text-lg transition-transform transform hover:scale-105 shadow-md">Pause</button>
+                <button id="reset-btn" class="w-full bg-red-500 hover:red:bg-red-600 text-white font-bold py-3 rounded-lg text-lg transition-transform transform hover:scale-105 shadow-md">Reset</button>
+             </div>
+        </div>
+
+    </div>
+
+    <script>
+        // DOM Elements
+        const settingsDiv = document.getElementById('settings');
+        const timerDisplayDiv = document.getElementById('timer-display');
+        const startBtn = document.getElementById('start-btn');
+        const pauseBtn = document.getElementById('pause-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const pauseResetControls = document.getElementById('pause-reset-controls');
+
+        const workMinutesInput = document.getElementById('work-minutes');
+        const workSecondsInput = document.getElementById('work-seconds');
+        const restMinutesInput = document.getElementById('rest-minutes');
+        const restSecondsInput = document.getElementById('rest-seconds');
+        const roundsInput = document.getElementById('rounds');
+
+        const statusDisplay = document.getElementById('status');
+        const timerDisplay = document.getElementById('timer');
+        const roundCounterDisplay = document.getElementById('round-counter');
+
+        // Timer State
+        let timerInterval = null;
+        let totalRounds = 0;
+        let currentRound = 1;
+        let isWorkPhase = true;
+        let isPaused = false;
+        let isGetReadyPhase = false;
+        let timeLeft = 0;
+        let workTime = 0;
+        let restTime = 0;
+
+        // Audio Synth using Tone.js
+        let synth;
+
+        function initializeAudio() {
+            if (!synth) {
+                synth = new Tone.Synth().toDestination();
+            }
+        }
+        
+        // --- Sound Functions ---
+        const playSound = (note, duration) => {
+             if (synth) {
+                synth.triggerAttackRelease(note, duration);
+            }
+        };
+
+        const playWarningBeep = () => playSound("C5", "0.2");
+        const playStartBeep = () => playSound("G5", "0.2");
+        const playEndBeep = () => playSound("C6", "0.5");
+        const playWorkoutComplete = () => {
+            const now = Tone.now();
+            playSound("C5", "0.2", now);
+            playSound("E5", "0.2", now + 0.2);
+            playSound("G5", "0.2", now + 0.4);
+            playSound("C6", "0.4", now + 0.6);
+        };
+        
+
+        // --- Timer Logic ---
+        function updateDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            roundCounterDisplay.textContent = `Round ${currentRound} / ${totalRounds}`;
+        }
+        
+        function tick() {
+            if (isPaused) return;
+
+            // Play warning sound 3 seconds before end
+            if (timeLeft === 4) {
+                playWarningBeep();
+            }
+
+            if (timeLeft > 0) {
+                timeLeft--;
+                updateDisplay();
+            } else {
+                // Time's up for the current phase
+                if (isGetReadyPhase) {
+                    isGetReadyPhase = false;
+                    isWorkPhase = true;
+                    statusDisplay.textContent = "WORK";
+                    statusDisplay.classList.remove('text-yellow-400', 'text-green-400');
+                    statusDisplay.classList.add('text-red-400');
+                    document.body.classList.remove('bg-gray-900', 'bg-green-900');
+                    document.body.classList.add('bg-red-900');
+                    timeLeft = workTime;
+                    playStartBeep();
+                    updateDisplay();
+                    return;
+                }
+
+                if (isWorkPhase) { // Work phase ended
+                    if (currentRound < totalRounds) {
+                        isWorkPhase = false;
+                        statusDisplay.textContent = "REST";
+                        statusDisplay.classList.remove('text-red-400');
+                        statusDisplay.classList.add('text-green-400');
+                        document.body.classList.remove('bg-red-900');
+                        document.body.classList.add('bg-green-900');
+                        timeLeft = restTime;
+                        playEndBeep();
+                    } else {
+                        workoutComplete();
+                        return;
+                    }
+                } else { // Rest phase ended
+                    currentRound++;
+                    isWorkPhase = true;
+                    statusDisplay.textContent = "WORK";
+                    statusDisplay.classList.remove('text-green-400');
+                    statusDisplay.classList.add('text-red-400');
+                    document.body.classList.remove('bg-green-900');
+                    document.body.classList.add('bg-red-900');
+                    timeLeft = workTime;
+                    playStartBeep();
+                }
+                 updateDisplay();
+            }
+        }
+        
+        function startWorkout() {
+            initializeAudio(); // Initialize audio context on user action
+            
+            // Get values from inputs
+            workTime = parseInt(workMinutesInput.value) * 60 + parseInt(workSecondsInput.value);
+            restTime = parseInt(restMinutesInput.value) * 60 + parseInt(restSecondsInput.value);
+            totalRounds = parseInt(roundsInput.value);
+
+            if (workTime <= 0 || totalRounds <= 0) {
+                // Using a custom modal/alert in the future would be better than alert()
+                const messageBox = document.createElement('div');
+                messageBox.textContent = "Please set a valid workout time and number of rounds.";
+                messageBox.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background-color: #ef4444; color: white; padding: 1rem; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 100;';
+                document.body.appendChild(messageBox);
+                setTimeout(() => messageBox.remove(), 3000);
+                return;
+            }
+
+            // Switch to timer view
+            settingsDiv.classList.add('hidden');
+            startBtn.classList.add('hidden');
+            timerDisplayDiv.classList.remove('hidden');
+            pauseResetControls.classList.remove('hidden');
+
+            // Start "Get Ready" phase
+            isGetReadyPhase = true;
+            timeLeft = 5; // 5-second countdown
+            currentRound = 1;
+            statusDisplay.textContent = "GET READY";
+            statusDisplay.classList.remove('text-red-400', 'text-green-400');
+            statusDisplay.classList.add('text-yellow-400');
+            updateDisplay();
+            
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(tick, 1000);
+        }
+
+        function pauseWorkout() {
+            isPaused = !isPaused;
+            pauseBtn.textContent = isPaused ? 'Resume' : 'Pause';
+            pauseBtn.classList.toggle('bg-yellow-500');
+            pauseBtn.classList.toggle('hover:bg-yellow-600');
+            pauseBtn.classList.toggle('bg-green-500');
+            pauseBtn.classList.toggle('hover:bg-green-600');
+        }
+
+        function resetWorkout() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            isPaused = false;
+            isWorkPhase = true;
+            
+            // Switch back to settings view
+            timerDisplayDiv.classList.add('hidden');
+            pauseResetControls.classList.add('hidden');
+            settingsDiv.classList.remove('hidden');
+            startBtn.classList.remove('hidden');
+
+            // Reset styles
+            document.body.classList.remove('bg-red-900', 'bg-green-900');
+            document.body.classList.add('bg-gray-900');
+            pauseBtn.textContent = 'Pause';
+            pauseBtn.classList.remove('bg-green-500', 'hover:bg-green-600');
+            pauseBtn.classList.add('bg-yellow-500', 'hover:bg-yellow-600');
+
+        }
+
+        function workoutComplete() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            playWorkoutComplete();
+            statusDisplay.textContent = "COMPLETE!";
+            statusDisplay.classList.remove('text-red-400', 'text-green-400');
+            statusDisplay.classList.add('text-cyan-400');
+            timerDisplay.textContent = "GOOD JOB!";
+            document.body.classList.remove('bg-red-900', 'bg-green-900');
+            document.body.classList.add('bg-gray-900');
+        }
+        
+        // Event Listeners
+        startBtn.addEventListener('click', startWorkout);
+        pauseBtn.addEventListener('click', pauseWorkout);
+        resetBtn.addEventListener('click', resetWorkout);
+
+    </script>
+</body>
+</html>
+
